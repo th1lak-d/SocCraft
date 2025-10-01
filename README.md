@@ -20,7 +20,7 @@ An AI-enhanced, open-source SOC framework with SOAR capabilities, designed for h
 
 The SOCCraft framework is a multi-layered ecosystem that integrates best-in-class open-source tools.
 
-docs/images/soccraft.png
+![SOCCraft System Architecture](./docs/images/soccraft.png)
 
 ---
 
