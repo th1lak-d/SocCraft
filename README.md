@@ -1,6 +1,6 @@
 # SocCraft
 An AI-enhanced, open-source SOC framework with SOAR capabilities, designed for high-speed, automated incident response.
-# SOCCraft: An AI-Augmented, Open-Source SOC with SOAR
+# SOCCraft: An ML, AI-Augmented, Open-Source SOC with SOAR
 
 **SOCCraft is a complete, end-to-end security framework that reduces incident response time by over 98% compared to manual processes.** It integrates a full open-source security stack with a hybrid AI engine to provide high-speed detection, intelligent analysis, and automated, risk-based remediation.
 
