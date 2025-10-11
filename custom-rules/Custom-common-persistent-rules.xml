@@ -1,0 +1,127 @@
+<group name="common_persistence_techniques,sshd,">
+  <rule id="100022" level="10">
+    <if_sid>554</if_sid>
+    <field name="file" type="pcre2">\/authorized_keys$</field>
+    <description>SSH authorized_keys file "$(file)" has been added</description>
+    <mitre>
+      <id>T1098.004</id>
+    </mitre>
+  </rule>
+  
+  <rule id="100023" level="10">
+    <if_sid>550</if_sid>
+    <field name="file" type="pcre2">\/authorized_keys$</field>
+    <description>SSH authorized_keys file "$(file)" has been modified</description>
+    <mitre>
+      <id>T1098.004</id>
+    </mitre>
+  </rule>
+
+  <rule id="100024" level="10">
+    <if_sid>550</if_sid>
+    <field name="file" type="pcre2">\/sshd_config$</field>
+    <description>SSH config file "$(file)" has been modified</description>
+    <mitre>
+      <id>T1098.004</id>
+    </mitre>
+  </rule>
+</group>
+<group name="common_persistence_techniques,">
+  <rule id="100025" level="10">
+    <if_sid>80700</if_sid>
+    <field name="audit.key">possible_rcscript_attack</field>
+    <description>[RC script "$(audit.file.name)" has been added, modified, or deleted]: Possible RC scripts persistence attack</description>
+    <mitre>
+      <id>T1037.004</id>
+    </mitre>
+  </rule>
+
+  <rule id="100026" level="10">
+    <if_sid>530</if_sid>
+    <match>'ppid of rc_local': 1$</match>
+    <description>[PPID of rc-local.service is 1]: Possible RC scripts persistence attack</description>
+    <mitre>
+      <id>T1037.004</id>
+    </mitre>
+  </rule>
+
+  <rule id="100027" level="10">
+    <if_sid>530</if_sid>
+    <regex type="pcre2">'state of rc_local service': (?!inactive$)</regex>
+    <description>[rc-local.service is not inactive]: Possible RC scripts persistence attack</description>
+    <mitre>
+      <id>T1037.004</id>
+    </mitre>
+  </rule>
+  </group>i
+
+  <group name="common_persistence_techniques,">
+  <rule id="100028" level="10">
+    <if_sid>550</if_sid>
+    <field name="file" type="pcre2">\/etc\/passwd$|\/etc\/shadow$|\/etc\/gshadow$|\/etc\/group$|\/etc\/login.defs$</field>
+    <description>[File "$(file)" has been modified]: Possible local account manipulation</description>
+    <mitre>
+      <id>T1136.001</id>
+      <id>T1078.003</id>
+    </mitre>
+  </rule>
+</group>
+
+<group name="common_persistence_techniques,">
+  <rule id="100029" level="10">
+    <if_sid>554</if_sid>
+    <field name="file" type="pcre2">\/etc\/profile$|\/etc/profile.d\/|\/etc\/bash.bashrc$|\/etc\/bash.bash_logout$|.bash_profile$|.bash_login$|.profile$|.bash_profile$|.bashrc$|.bash_logout$</field>
+    <description>Unix shell config "$(file)" has been added</description>
+    <mitre>
+      <id>T1546.004</id>
+    </mitre>
+  </rule>
+
+  <rule id="100032" level="10">
+    <if_sid>550</if_sid>
+    <field name="file" type="pcre2">\/etc\/profile$|\/etc/profile.d\/|\/etc\/bash.bashrc$|\/etc\/bash.bash_logout$|.bash_profile$|.bash_login$|.profile$|.bash_profile$|.bashrc$|.bash_logout$</field>
+    <description>Unix shell config "$(file)" has been modified</description>
+    <mitre>
+      <id>T1546.004</id>
+    </mitre>
+  </rule>
+</group>
+<group name="common_persistence_techniques,">
+  <rule id="100033" level="10">
+    <if_sid>80700</if_sid>
+    <field name="audit.key">possible_preload_hijack</field>
+    <description>[Config file "ld.so.preload" has been added, modified, or deleted]: Possible dynamic linker hijacking</description>
+    <mitre>
+      <id>T1574.006</id>
+    </mitre>
+  </rule>
+
+  <rule id="100034" level="10">
+    <if_sid>530</if_sid>
+    <match>'check for LD_PRELOAD envar'</match>
+    <description>[LD_PRELOAD envar has been set]: Possible dynamic linker hijacking</description>
+    <mitre>
+      <id>T1574.006</id>
+    </mitre>
+  </rule>
+</group>
+
+<group name="common_persistence_techniques,">
+  <rule id="100035" level="12">
+    <if_sid>554</if_sid>
+    <field name="file" type="pcre2">\/systemd\/system\/.*\.timer$|\/systemd\/system\/.*\.service$</field>
+    <description>[Systemd "$(file)" has been added]: Possible task/job scheduling</description>
+    <mitre>
+      <id>T1053.006</id>
+    </mitre>
+  </rule>
+
+  <rule id="100036" level="12">
+    <if_sid>550</if_sid>
+    <field name="file" type="pcre2">\/systemd\/system\/.*\.timer$|\/systemd\/system\/.*\.service$</field>
+    <description>[Systemd "$(file)" has been modified]: Possible task/job scheduling</description>
+    <mitre>
+      <id>T1053.006</id>
+    </mitre>
+  </rule>
+</group>
