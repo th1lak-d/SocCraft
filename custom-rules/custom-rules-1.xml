@@ -1,1 +1,472 @@
+<group name="local,syslog,sshd,">
 
+  <!--
+  Dec 10 01:02:02 host sshd[1234]: Failed none for root from 1.1.1.1 port 1066 ssh2
+  -->
+  <rule id="100064" level="5">
+    <if_sid>5716</if_sid>
+    <srcip>1.1.1.1</srcip>
+    <description>sshd: authentication failed from IP 1.1.1.1.</description>
+    <group>authentication_failed,pci_dss_10.2.4,pci_dss_10.2.5,</group>
+  </rule>
+
+</group>
+<group name="local,syslog,sshd,">
+  <rule id="100065" level="5">
+    <if_sid>5716</if_sid>
+    <match type="pcre2">\b(?!(10)|192\.168|172\.(2[0-9]|1[6-9]|3[0-1])|(25[6-9]|2[6-9][0-9]|[3-9][0-9][0-9]|99[1-9]))[0-9]{1,3}\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)</match>
+    <description>sshd: Authentication failed from a public IP address $(srcip).</description>
+    <group>authentication_failed,authentication_success,pci_dss_10.2.4,pci_dss_10.2.5,</group>
+  </rule>
+
+  <rule id="100066" level="5">
+    <if_sid>5715</if_sid>
+    <match type="pcre2">\b(?!(10)|192\.168|172\.(2[0-9]|1[6-9]|3[0-1])|(25[6-9]|2[6-9][0-9]|[3-9][0-9][0-9]|99[1-9]))[0-9]{1,3}\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)</match>
+    <description>sshd: Authentication succeeded from a public IP address $(srcip).</description>
+    <group>authentication_failed,authentication_success,pci_dss_10.2.4,pci_dss_10.2.5,</group>
+  </rule>
+</group>
+<group name="local,syslog,sshd,">
+  <rule id="100067" level="10">
+    <field name="abuseipdb.source.rule" type="pcre2">^100065$</field>
+    <field name="abuseipdb.abuse_confidence_score" type="pcre2" negate="yes">^0$</field>
+    <description>AbuseIPDB: SSH Authentication failed from a public IP address $(abuseipdb.source.srcip) with $(abuseipdb.abuse_confidence_score)% confidence of abuse.</description>
+    <group>authentication_failed,pci_dss_10.2.4,pci_dss_10.2.5,</group>
+  </rule>
+  <rule id="100068" level="14">
+    <field name="abuseipdb.source.rule" type="pcre2">^100066$</field>
+    <field name="abuseipdb.abuse_confidence_score" type="pcre2" negate="yes">^0$</field>
+    <description>AbuseIPDB: SSH Authentication succeeded from a public IP address $(abuseipdb.source.srcip) with $(abuseipdb.abuse_confidence_score)% confidence of abuse.</description>
+    <group>authentication_failed,pci_dss_10.2.4,pci_dss_10.2.5,</group>
+  </rule>
+</group>
+<group name="local, suricata,integration">
+  <rule id="100069" level="10">
+    <field name="urlhaus.url_threat">malware_download</field>
+    <description>URLhaus: An endpoint connected to a url known for deploying malware.</description>
+  </rule>
+</group>
+<group name="custom_active_response_rules,">
+  <rule id="100071" level="12">
+    <if_sid>86600</if_sid>
+    <field name="event_type">^alert$</field>
+    <match>ET DOS Inbound GoldenEye DoS attack</match>
+    <description>GoldenEye DoS attack has been detected. </description>
+    <mitre>
+      <id>T1498</id>
+    </mitre>
+  </rule>
+
+  <rule id="100072" level="12">
+    <if_sid>86600</if_sid>
+    <field name="event_type">^alert$</field>
+    <match>ET SCAN Nmap Scripting Engine User-Agent Detected (Nmap Scripting Engine)</match>
+    <description>Nmap scripting engine detected. </description>
+    <mitre>
+      <id>T1595</id>
+    </mitre>
+  </rule>
+</group>
+<group name="windows,sysmon,">
+
+  <rule id="115006" level="6">
+    <if_group>windows</if_group>
+    <field name="win.eventdata.ruleName" type="pcre2">^technique_id=T1053,technique_name=Scheduled Task$</field>
+    <field name="win.eventdata.eventType" type="pcre2">^CreateKey$</field>
+    <description>A Newly Scheduled Task has been Detected on $(win.system.computer)</description>
+    <mitre>
+        <id>T1053</id>
+    </mitre>
+  </rule>
+
+  <rule id="115007" level="0">
+    <if_sid>115006</if_sid>
+    <field name="win.eventdata.targetObject" type="pcre2">^HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Schedule\\TaskCache\\Tree\\Microsoft\\Windows\\UpdateOrchestrator$</field>
+    <description>Suppression rule for scheduled task created by update orchestrator</description>
+  </rule>
+
+</group>
+
+  <group name="windows,sysmon,">
+    <rule id="115008" level="10">
+    <decoded_as>json</decoded_as>
+    <field name="ScheduledTaskAR.Arguments" type="pcre2" negate="yes">^null$</field>
+    <field name="TaskName" type="pcre2">(.|\s)*\S(.|\s)*</field>
+    <description>A new scheduled task "$(TaskName)" has been created on "$(ScheduledTaskAR.CimSystemProperties.ServerName)". The task will execute the command - "$(ScheduledTaskAR.Execute) $(ScheduledTaskAR.Arguments)".</description>
+    <mitre>
+        <id>T1053</id>
+    </mitre>
+  </rule>
+
+  <rule id="115009" level="10">
+    <decoded_as>json</decoded_as>
+    <field name="ScheduledTaskAR.Arguments" type="pcre2">^null$</field>
+    <field name="TaskName" type="pcre2">(.|\s)*\S(.|\s)*</field>
+    <description>A new scheduled task "$(TaskName)" has been created on "$(ScheduledTaskAR.CimSystemProperties.ServerName)". The task will execute the command - "$(ScheduledTaskAR.Execute)".</description>
+    <mitre>
+        <id>T1053</id>
+    </mitre>
+  </rule>
+  </group>
+  <group name="Windows,attack,">
+<!-- Detecting an LSASS memory dumping attack using Rundll32.exe Minidump Function or Comsvcs.dll Exploitation -->
+  <rule id="100010" level="10">
+    <if_sid>61609</if_sid>
+    <field name="win.eventdata.image" type="pcre2">(?i)\\rundll32.exe</field>
+    <field name="win.eventdata.imageLoaded" type="pcre2">(?i)[c-z]:\\Windows\\System32\\comsvcs\.dll</field>
+    <description>Possible adversary activity - LSASS memory dump: $(win.eventdata.imageLoaded) loaded by using $(win.eventData.image) on $(win.system.computer).</description>
+    <mitre>
+      <id>T1003.001</id>
+    </mitre>
+  </rule>
+
+<!-- Detecting a Windows Credential Manager exploitation attack -->
+  <rule id="100012" level="10">
+    <if_sid>61603</if_sid>
+    <field name="win.eventData.Image" type="pcre2">(?i)\\rundll32.exe</field>
+    <field name="win.eventData.commandLine" type="pcre2">keymgr.dll,KRShowKeyMgr</field>
+    <description>Possible adversary activity - Credential Manager Access via $(win.eventData.Image) on $(win.system.computer) endpoint.</description>
+    <mitre>
+      <id>T1003</id>
+    </mitre>
+  </rule>
+
+<!--  Detecting a Windows Credential Manager exploitation attack by VaultCmd process enumeration -->
+  <rule id="100013" level="10">
+    <if_sid>92052</if_sid>
+    <field name="win.eventData.image" type="pcre2">(?i)\\vaultcmd.exe</field>
+    <field name="win.eventData.commandLine" type="pcre2">list</field>
+    <description>Possible adversary activity - Attempt to list credentials via $(win.eventData.Image) on $(win.system.computer) endpoint.</description>
+    <mitre>
+      <id>T1003</id>
+    </mitre>
+  </rule>
+
+</group>
+<group name="windows,sysmon">
+  <rule id="100200" level="12">
+    <if_sid>61610</if_sid>
+    <description>Possible process injection activity detected from "$(win.eventdata.sourceImage)" on "$(win.eventdata.targetImage)"</description>
+    <mitre>
+      <id>T1055.001</id>
+    </mitre>
+  </rule>
+
+  <rule id="100100" level="0">
+    <if_sid>100200</if_sid>
+    <field name="win.eventdata.sourceImage" type="pcre2">(C:\\Windows\\system32)|chrome.exe</field>
+    <description>Ignore Windows binaries and Chrome</description>
+  </rule>
+</group>
+
+<group name="ProcessCreation">
+<!-- Rules 100500 - 100999: Exceptions/Rule Level Mod -->
+<rule id="100500" level="10">
+<if_sid>61603</if_sid>
+<list field="win.eventdata.company" lookup="not_match_key">etc/lists/software-vendors</list>
+<description>Sysmon - Event 1: Process $(win.eventdata.description) started but not allowed by the software policy.</description>
+<mitre>
+<id>T1036</id>
+</mitre>
+<options>no_full_log</options>
+<group>sysmon_event1,software_policy</group>
+</rule>
+</group>
+<group name="linux,nmap,">
+  <rule id="100073" level="5">
+    <decoded_as>json</decoded_as>
+    <field name="nmap_port">\.+</field>
+    <field name="nmap_port_service">\.+</field>
+      <description>NMAP: Host scan. Port $(nmap_port) is open and hosting the $(nmap_port_service) service.</description>
+    <options>no_full_log</options>
+  </rule>
+</group>
+<group name="linux,chat_gpt">
+  <rule id="100074" level="5">
+    <if_sid>100073</if_sid>
+    <field name="nmap_port">\d+</field>
+      <description>NMAP: Host scan. Port $(nmap_port) is open.</description>
+    </rule>
+
+  <rule id="100075" level="5">
+    <if_sid>100073</if_sid>
+    <field name="nmap_port_service">^\s$</field>
+      <description>NMAP: Port $(nmap_port) is open but no service is found.</description>
+    </rule>
+</group>
+<group name="linux">
+<rule id="100076" level="7">
+    <field name="ai_analysis.found">1</field>
+    <description>OpenRouter AI Analysis for: $(ai_analysis.source.nmap_port_service)</description>
+    <field name="integration">custom-openrouter</field>
+    <options>no_full_log</options>
+    <group>integration,ai_analysis,</group>
+</rule>
+</group>
+<group name="linux">
+<rule id="100077" level="10">
+    <field name="integration">custom-local-llm</field>
+    <description>Local LLM Insight for Rule $(llm_insight.source.rule_id): $(llm_insight.source.description)</description>
+    <field name="llm_insight.response" type="text" />
+    <group>integration,llm_insight,</group>
+</rule>
+</group>
+<group name="linux">
+<rule id="100078" level="11">
+    <field name="integration">fim-dynamic-ai</field>
+    <description>Dynamic AI Insight: High-Frequency Modification of $(ai_insight.file_path)</description>
+    <field name="ai_insight.response" type="text"/>
+    <group>integration,fim_anomaly,ai_insight,</group>
+</rule>
+</group>
+<group name="integration,ai_insight">
+  <!-- Updated rule for enhanced SOAR integration -->
+  <rule id="100079" level="12">
+    <field name="integration">velociraptor-soar-enhanced</field>
+    <description>Velociraptor Enhanced Analysis Complete [$(velociraptor.flow_id)]: AI-Powered Threat Detection</description>
+    <field name="velociraptor.ai_analysis" type="text" />
+    <group>integration,incident_response,velociraptor,ai_analysis,threat_hunting</group>
+  </rule>
+  
+  <!-- Optional: Add separate rule for backward compatibility -->
+  <rule id="100081" level="12">
+    <field name="integration">velociraptor-soar</field>
+    <description>Velociraptor Legacy Analysis [$(velociraptor.flow_id)]: Process Analysis</description>
+    <field name="velociraptor.ai_summary" type="text" />
+    <group>integration,incident_response,velociraptor,ai_analysis</group>
+  </rule>
+</group>
+<group name="integration,ai_insights">
+<rule id="100082" level="12">
+    <field name="integration">velociraptor-soar</field>
+    <description>Velociraptor SOAR - AI Analysis for Alert [$(source_alert.rule_id)] on $(source_alert.agent_name)</description>
+    <field name="velociraptor.ai_summary" type="text" />
+    <group>integration,incident_response,velociraptor,ai_analysis,</group>
+</rule>
+<rule id="100083" level="12">
+ <field name="integration">custom-openrouter</field>
+ <field name="ai_analysis.choices" type="text" />
+ <field name="ai_analysis.source.rule">109102</field>
+ <description>OpenRouter AI Analysis - Enrichment for Alert [$(ai_analysis.source.rule)] on $(ai_analysis.source.alert_id) from $(ai_analysis.source.description)</description>
+ </rule>
+</group>
+
+<group name="virustotal,">
+  <rule id="100086" level="12">
+    <if_sid>657</if_sid>
+    <match>Successfully removed threat</match>
+    <description>$(parameters.program) removed threat located at $(parameters.alert.data.virustotal.source.file)</description>
+  </rule>
+
+  <rule id="100087" level="12">
+    <if_sid>657</if_sid>
+    <match>Error removing threat</match>
+    <description>Error removing threat located at $(parameters.alert.data.virustotal.source.file)</description>
+  </rule>
+</group>
+<group name="virustotal,">
+  <rule id="100092" level="12">
+      <if_sid>657</if_sid>
+      <match>Successfully removed threat</match>
+      <description>$(parameters.program) removed threat located at $(parameters.alert.data.virustotal.source.file)</description>
+  </rule>
+
+  <rule id="100093" level="12">
+    <if_sid>657</if_sid>
+    <match>Error removing threat</match>
+    <description>Error removing threat located at $(parameters.alert.data.virustotal.source.file)</description>
+  </rule>
+</group>
+<group name="syscheck,">
+  <rule id="100094" level="7">
+    <if_sid>550</if_sid>
+    <field name="file">/root/</field>
+    <description>File modified in /root directory.</description>
+  </rule>
+  <rule id="100095" level="7">
+    <if_sid>554</if_sid>
+    <field name="file">/root/</field>
+    <description>File added to /root directory.</description>
+  </rule>
+</group>
+
+<group name="yara,">
+  <rule id="100096" level="0">
+    <decoded_as>yara_decoder</decoded_as>
+    <description>Yara grouping rule</description>
+  </rule>
+  <rule id="100097" level="12">
+    <if_sid>100096</if_sid>
+    <match>wazuh-yara: INFO - Scan result: </match>
+    <description>File "$(yara_scanned_file)" is a positive match. Yara rule: $(yara_rule)</description>
+  </rule>
+</group>
+
+<!-- Updated Bedrock Rules -->
+
+<group name="integration,bedrock,">
+  <rule id="100098" level="12">
+    <field name="integration">bedrock-hash-analyzer</field>
+    <description>Bedrock Analysis [$(data.bedrock_analysis.risk_level)]: Threat identified for $(data.bedrock_analysis.hash_type) hash at $(data.bedrock_analysis.file_path).</description>
+  </rule>
+</group>
+
+<group name="syscheck,">
+  <rule id="100303" level="7">
+    <if_sid>550</if_sid>
+    <field name="file">C:\\Users\\evil\\Documents</field>
+    <description>File modified in C:\Users\evil\Documents directory.</description>
+  </rule>
+  <rule id="100304" level="7">
+    <if_sid>554</if_sid>
+    <field name="file">C:\\Users\\evil\\Documents</field>
+    <description>File added to C:\Users\evil\Documents  directory.</description>
+  </rule>
+</group>
+
+<group name="yara,">
+  <rule id="100084" level="0">
+    <decoded_as>yara_decoder</decoded_as>
+    <description>Yara grouping rule</description>
+  </rule>
+
+  <rule id="100099" level="12">
+    <if_sid>100084</if_sid>
+    <match>wazuh-yara: INFO - Scan result: </match>
+    <description>File "$(yara_scanned_file)" is a positive match. Yara rule: $(yara_rule)</description>
+  </rule>
+</group>
+
+<group name="velociraptor_active_response,integration,">
+
+  <!-- Parent Rule: Catches all feedback from our AI-driven script -->
+  <rule id="200600" level="5">
+    <decoded_as>json</decoded_as>
+    <!-- Use the specific integration name from your new script -->
+    <field name="integration">velociraptor-ai-ar</field>
+    <description>Velociraptor: AI-driven response action triggered for file $(data.target_file).</description>
+    <options>no_full_log</options>
+  </rule>
+
+  <!-- Child Rule: Successful DELETE -->
+  <rule id="200601" level="8">
+    <if_sid>200600</if_sid>
+    <field name="data.action_taken">DELETE</field>
+    <field name="data.status">success</field>
+    <description>Velociraptor: Successfully DELETED malicious file $(data.target_file).</description>
+    <options>no_full_log</options>
+  </rule>
+  
+  <!-- Child Rule: FAILED DELETE -->
+  <rule id="200602" level="12">
+    <if_sid>200600</if_sid>
+    <field name="data.action_taken">DELETE</field>
+    <field name="data.status">failed</field>
+    <description>Velociraptor: FAILED to delete malicious file $(data.target_file).</description>
+    <options>no_full_log</options>
+  </rule>
+
+  <!-- Child Rule: Successful QUARANTINE -->
+  <rule id="200603" level="7">
+    <if_sid>200600</if_sid>
+    <field name="data.action_taken">QUARANTINE</field>
+    <field name="data.status">success</field>
+    <description>Velociraptor: Successfully QUARANTINED suspicious file $(data.target_file).</description>
+    <options>no_full_log</options>
+  </rule>
+
+  <!-- Child Rule: FAILED QUARANTINE -->
+  <rule id="200604" level="10">
+    <if_sid>200600</if_sid>
+    <field name="data.action_taken">QUARANTINE</field>
+    <field name="data.status">failed</field>
+    <description>Velociraptor: FAILED to quarantine suspicious file $(data.target_file).</description>
+    <options>no_full_log</options>
+  </rule>
+
+  <!-- Child Rule: MONITOR action (Visible) -->
+  <rule id="200605" level="3">
+    <if_sid>200600</if_sid>
+    <field name="data.action_taken">MONITOR</field>
+    <description>Velociraptor: Low-risk file marked for monitoring: $(data.target_file).</description>
+    <options>no_full_log</options>
+  </rule>
+
+</group>
+<!--
+  Rules for Velociraptor Active Response: Userinit Remediation
+  - Parent Rule (100300): Catches all events from the script.
+  - Child Rule (100301): Triggers on a successful remediation.
+  - Child Rule (100302): Triggers on a FAILED remediation.
+-->
+<group name="integration">
+<!-- Parent Rule: Identifies the integration -->
+<rule id="200607" level="5">
+    <decoded_as>json</decoded_as>
+    <field name="integration">velociraptor-userinit-ar</field>
+    <description>Velociraptor: Userinit remediation action was triggered.</description>
+    <options>no_full_log</options>
+</rule>
+
+<!-- Child Rule: Successful Remediation -->
+<rule id="200608" level="7">
+    <if_sid>200607</if_sid>
+    <field name="data.status">success</field>
+    <description>Velociraptor: Userinit registry value was successfully reset on $(agent.name).</description>
+    <options>no_full_log</options>
+</rule>
+
+<!-- Child Rule: FAILED Remediation -->
+<rule id="200609" level="12">
+    <if_sid>200607</if_sid>
+    <field name="data.status">failed</field>
+    <description>Velociraptor: FAILED to reset Userinit registry value on $(agent.name).</description>
+    <options>no_full_log</options>
+</rule>
+</group>
+<group name="integration">
+<rule id="200610" level="5">
+    <field name="integration">velociraptor-samdump-ar</field>
+    <description>Velociraptor: SAM dump response (Collect, Delete, Quarantine) was triggered.</description>
+    <options>no_full_log</options>
+</rule>
+
+<rule id="200611" level="8">
+    <if_sid>200610</if_sid>
+    <field name="data.status">success</field>
+    <description>Velociraptor: SAM dump response successful on agent $(data.target_agent).</description>
+    <options>no_full_log</options>
+</rule>
+
+<rule id="200612" level="12">
+    <if_sid>200610</if_sid>
+    <field name="data.status">failed</field>
+    <description>Velociraptor: FAILED to perform SAM dump response on agent $(data.target_agent).</description>
+    <options>no_full_log</options>
+</rule>
+</group>
+
+<group name="integration">
+<rule id="200616" level="5">
+    <decoded_as>json</decoded_as>
+    <field name="integration">velociraptor-blockip-ar</field>
+    <description>Velociraptor: IP block action was triggered.</description>
+    <options>no_full_log</options>
+</rule>
+
+<!-- Child Rule: Successful Block -->
+<rule id="200617" level="8">
+    <if_sid>200616</if_sid>
+    <field name="data.status">success</field>
+    <description>Velociraptor: Successfully blocked a suspicious IP on agent $(data.target_agent).</description>
+    <options>no_full_log</options>
+</rule>
+
+<!-- Child Rule: FAILED Block -->
+<rule id="200618" level="12">
+    <if_sid>200616</if_sid>
+    <field name="data.status">failed</field>
+    <description>Velociraptor: FAILED to block a suspicious IP on agent $(data.target_agent).</description>
+    <options>no_full_log</options>
+</rule>
+</group>
