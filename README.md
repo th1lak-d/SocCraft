@@ -50,4 +50,4 @@ The framework was validated against multiple MITRE ATT&CK scenarios, demonstrati
 
 ## 🎬 Demo
 
-*[Insert a GIF here showing the end-to-end Warzone RAT test: file drop -> alerts -> file deleted]*
+*in progress
