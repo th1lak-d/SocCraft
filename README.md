@@ -50,4 +50,4 @@ The framework was validated against multiple MITRE ATT&CK scenarios, demonstrati
 
 ## 🎬 Demo
 
-*in progress
+![SOCCraft Demo](assets/github1.gif)
